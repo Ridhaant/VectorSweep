@@ -1,0 +1,13 @@
+# vectorsweep requirements
+# Author: Ridhaant Ajoy Thackur
+
+numpy>=1.26.0
+
+# Optional: 5-10x faster CPU sweep
+numba>=0.59.0
+
+# Optional: GPU acceleration (NVIDIA CUDA 12)
+# cupy-cuda12x>=13.0.0
+
+# Dev
+pytest>=7.4.0
