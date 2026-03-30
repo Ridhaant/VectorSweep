@@ -84,19 +84,19 @@ SweepConfig (x_min, x_max, x_step, prev_close, budget)
         │
         ▼
   ┌─────────────────────────────────────────────┐
-  │       Backend auto-detection (import time)   │
+  │       Backend auto-detection (import time)  │
   │                                             │
-  │  ① CuPy/CUDA 12  → _cupy_sweep()           │
+  │  ① CuPy/CUDA 12  → _cupy_sweep()            │
   │     arrays on GPU VRAM, cupy.where()        │
   │     < 1ms for 32K variants × 390 ticks      │
   │                                             │
-  │  ② Numba JIT     → _numba_tick_kernel()    │
+  │  ② Numba JIT     → _numba_tick_kernel()     │
   │     @njit(parallel=True, fastmath=True)     │
   │     prange over N variants per tick         │
   │     ~40ms for same workload                 │
   │                                             │
-  │  ③ NumPy         → _numpy_sweep()          │
-  │     masked array updates                   │
+  │  ③ NumPy         → _numpy_sweep()           │
+  │     masked array updates                    │
   │     ~250ms baseline (always available)      │
   └─────────────────────────────────────────────┘
         │
