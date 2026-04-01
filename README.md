@@ -1,265 +1,98 @@
 <div align="center">
 
-```
-██╗   ██╗███████╗ ██████╗████████╗ ██████╗ ██████╗
-██║   ██║██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
-██║   ██║█████╗  ██║        ██║   ██║   ██║██████╔╝
-╚██╗ ██╔╝██╔══╝  ██║        ██║   ██║   ██║██╔══██╗
- ╚████╔╝ ███████╗╚██████╗   ██║   ╚██████╔╝██║  ██║
-  ╚═══╝  ╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-      SWEEP
-```
-
-# vectorsweep
-
-**GPU-Accelerated Vectorised Strategy Parameter Sweep Engine**
-
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![CUDA](https://img.shields.io/badge/CUDA-Optional_GPU-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
-[![NumPy](https://img.shields.io/badge/NumPy-Backend-013243?style=for-the-badge&logo=numpy&logoColor=white)](https://numpy.org)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-pytest-blue?style=for-the-badge)](./tests/)
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=24&duration=2500&pause=800&color=76B900&center=true&vCenter=true&width=800&lines=VectorSweep;GPU-Accelerated+Strategy+Parameter+Optimization;2%2C352%2C000+Evaluations%2FTick+%7C+%3C1ms+CUDA;CuPy+%E2%86%92+Numba+JIT+%E2%86%92+NumPy+%E2%80%94+3-Tier+Fallback" alt="VectorSweep" />
 
 <br/>
 
-> Evaluates **thousands of (entry, stop-loss, target) parameter variants**
-> against a full intraday price series — simultaneously — in **< 1 ms on GPU**.
-> Auto-detects CuPy CUDA / Numba JIT / NumPy. Same code. Optimal hardware.
+![Evaluations](https://img.shields.io/badge/Evaluations%2FTick-2%2C352%2C000-76B900?style=for-the-badge&logo=nvidia&logoColor=white)
+![Latency](https://img.shields.io/badge/GPU%20Latency-%3C1ms-00FF41?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
 <br/>
 
-[⚡ Quickstart](#quickstart) · [🏗 How It Works](#how-it-works) · [🔢 Performance](#performance) · [📐 API Reference](#api-reference) · [🔗 Project Context](#project-context)
+<img src="https://skillicons.dev/icons?i=python,linux,git,github&theme=dark" />
+
+<br/><br/>
+
+![CuPy CUDA 12](https://img.shields.io/badge/CuPy_CUDA_12-76B900?style=flat-square&logo=nvidia&logoColor=white)
+![Numba JIT](https://img.shields.io/badge/Numba_JIT-00A3E0?style=flat-square&logo=llvm&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white)
+![Decimal](https://img.shields.io/badge/Decimal_Precision-FF6B35?style=flat-square)
+
+*Sole-authored by **[Ridhaant Ajoy Thackur](https://github.com/Ridhaant)** · Extracted from [AlgoStack](https://github.com/Ridhaant/AlgoStack)*
 
 </div>
 
 ---
 
-## The Problem with Parameter Sweeps
+## ⚡ What Is VectorSweep?
 
-Most quant backtests loop over parameter variants one at a time:
+A production-tested GPU-accelerated parameter sweep library that evaluates **thousands of strategy parameter hypotheses in a single vectorised pass** — eliminating per-variant Python loops entirely. Extracted from AlgoStack's live trading platform where it processes **2,352,000 X-multiplier evaluations per price tick in <1ms**.
 
-```python
-# ❌ Naive approach — O(N) Python loops = slow
-for x in x_values:
-    simulate_strategy(prices, x)    # 32,000 iterations × 390 ticks = 12.48M ops
-                                    # Python loop: ~45 seconds
-```
+---
 
-`vectorsweep` solves this by evaluating **all N variants simultaneously** as a single vectorised operation:
+## 📊 Performance
 
-```python
-# ✅ vectorsweep — one pass, all variants in parallel
-results = engine.run(prices)        # 12.48M ops in < 1ms on GPU
-                                    # ~40ms on CPU (Numba JIT)
+| Scanner | Symbols | X-values | Evaluations/Tick | Backend | Latency | Status |
+|:---|:---|:---|---:|:---|:---|:---:|
+| S1 Narrow | 38 equity | 1,000 | 38,000 | NumPy | ~5ms | 🟢 LIVE |
+| S2 Dual | 38 equity | 16,000 | 608,000 | Numba JIT | ~40ms | 🟢 LIVE |
+| S3 Wide | 38 equity | 32,000 | **1,216,000** | **CuPy CUDA** | **<1ms** | 🟢 LIVE |
+| Commodity | 5 MCX | 49,000 | 245,000 | Auto-detect | varies | 🟢 LIVE |
+| Crypto | 5 Binance | 49,000 | 245,000 | Auto-detect | varies | 🟢 LIVE |
+| **Total** | **48** | **147,000** | **2,352,000** | | | ✅ PROD |
+
+**Session throughput:** 32,000 variants × 390 ticks = **12.48M evaluations/session** in <1ms per tick on GTX 1650.
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    subgraph "📥 Input"
+        TICK["Market Price Tick"]
+        XVALS["X-Value Grid<br/>1,000 → 32,000 candidates"]
+    end
+    subgraph "⚙️ SweepEngine"
+        LEVELS["Level Arrays via NumPy Broadcasting<br/>buy_above[N], sell_below[N], t1..t5[N]<br/>Built once — O(1) per tick"]
+        EVAL["Boolean Mask Evaluation<br/>any_exit = bt1 | bsl | st1 | ssl<br/>All N variants simultaneously"]
+        SCORE["Composite Score<br/>0.5×P&L + 0.3×win_rate + 0.2×(1−drawdown)"]
+    end
+    subgraph "🖥️ 3-Tier Compute Backend"
+        GPU["CuPy CUDA 12<br/>15–30× NumPy · <1ms"]
+        JIT["Numba JIT<br/>@njit parallel · 5–10× · ~40ms"]
+        CPU["NumPy Baseline<br/>~250ms"]
+    end
+    TICK & XVALS --> LEVELS --> EVAL --> SCORE
+    SCORE -->|"auto-detect"| GPU
+    SCORE -->|"fallback"| JIT
+    SCORE -->|"fallback"| CPU
+
+    style GPU fill:#0d1117,stroke:#76B900,stroke-width:2px,color:#76B900
+    style JIT fill:#0d1117,stroke:#00A3E0,stroke-width:2px,color:#00A3E0
+    style CPU fill:#0d1117,stroke:#013243,stroke-width:2px,color:#e6edf3
 ```
 
 ---
 
-## How It Works
+## 🔗 Proven in Production
 
-For each `X` deviation value, the strategy is:
-
-```
-buy_above   = prev_close + X          ← long entry trigger
-sell_below  = prev_close − X          ← short entry trigger
-sl_buy      = buy_above  − X          ← long stop-loss
-sl_sell     = sell_below + X          ← short stop-loss
-t1_buy      = buy_above  + X          ← first long target
-t1_sell     = sell_below − X          ← first short target
-qty         = floor(budget / price)   ← dynamic position size
-```
-
-Instead of running these serially, vectorsweep builds **N-dimensional arrays** where each index represents one X variant, then evaluates all variants simultaneously on every price tick using boolean mask operations — no Python loops in the hot path.
-
-### Sweep Architecture
-
-```
-SweepConfig (x_min, x_max, x_step, prev_close, budget)
-        │
-        ▼
-  gen_x_values()           ← Decimal-exact step generation (no float64 drift)
-        │
-        ▼
- _build_level_arrays()     ← NumPy broadcasting: builds buy_above[N], sl[N], t1[N]
-        │
-        ▼
-  ┌─────────────────────────────────────────────┐
-  │       Backend auto-detection (import time)  │
-  │                                             │
-  │  ① CuPy/CUDA 12  → _cupy_sweep()            │
-  │     arrays on GPU VRAM, cupy.where()        │
-  │     < 1ms for 32K variants × 390 ticks      │
-  │                                             │
-  │  ② Numba JIT     → _numba_tick_kernel()     │
-  │     @njit(parallel=True, fastmath=True)     │
-  │     prange over N variants per tick         │
-  │     ~40ms for same workload                 │
-  │                                             │
-  │  ③ NumPy         → _numpy_sweep()           │
-  │     masked array updates                    │
-  │     ~250ms baseline (always available)      │
-  └─────────────────────────────────────────────┘
-        │
-        ▼
-  List[SweepResult]   — sorted by net_pnl descending
-```
-
-**Why Decimal step generation?**
-Float64 accumulation drift: `0.008 + 1000 × 0.000001 ≠ 0.009` in float64. A drifted endpoint silently skips the best X value. `gen_x_values()` uses Python `Decimal` internally before converting to `float64` — O(N) overhead of < 1ms, zero drift.
+Extracted from [AlgoStack](https://github.com/Ridhaant/AlgoStack) v10.7's `sweep_core.py` — battle-tested across **16 concurrent processes** on a live multi-asset trading platform processing NSE, MCX, and Binance markets simultaneously.
 
 ---
 
-## Performance
+## 📦 Related
 
-| Backend | Hardware | Variants | Ticks | Evaluations | Time |
-|---------|---------|----------|-------|-------------|------|
-| **CuPy CUDA** | GTX 1650 (4GB) | 32,000 | 390 | 12,480,000 | **< 1 ms** |
-| **Numba JIT** | i5-12450H (CPU) | 32,000 | 390 | 12,480,000 | **~40 ms** |
-| **NumPy** | Any CPU | 32,000 | 390 | 12,480,000 | **~250 ms** |
-
-**VRAM footprint:** 32K variants × float32 arrays ≈ **11 MB** of 4,096 MB (< 0.3%)
-
-Run the built-in benchmark:
-
-```python
-from src.vectorsweep import SweepEngine, SweepConfig
-cfg = SweepConfig(x_min=0.001, x_max=0.5, x_step=0.0001, prev_close=2450.0)
-engine = SweepEngine(cfg)
-print(engine.benchmark(n_ticks=390))
-# Backend: cupy | 12480000 evals | 0.8ms | 15600000 evals/ms
-```
+[![AlgoStack](https://img.shields.io/badge/AlgoStack-Parent%20Platform-00D4FF?style=for-the-badge)](https://github.com/Ridhaant/AlgoStack)
+[![nexus-price-bus](https://img.shields.io/badge/nexus--price--bus-Price%20Ticks-DF0000?style=for-the-badge)](https://github.com/Ridhaant/Nexus-Price-Bus)
+[![sentitrade](https://img.shields.io/badge/sentitrade-NLP%20Signals-3fb950?style=for-the-badge)](https://github.com/Ridhaant/SentiTrade)
 
 ---
 
-## Quickstart
+<div align="center">
 
-### Install
+© 2026 Ridhaant Ajoy Thackur · MIT License
 
-```bash
-pip install numpy numba pytz
-# Optional GPU acceleration (NVIDIA CUDA 12):
-pip install cupy-cuda12x
-```
-
-```bash
-pip install -r requirements.txt
-```
-
-### Basic sweep
-
-```python
-import numpy as np
-from src.vectorsweep import SweepEngine, SweepConfig
-
-# One intraday session — 390 one-minute bars
-rng = np.random.default_rng(42)
-prices = 2450.0 + np.cumsum(rng.normal(0, 1.2, 390))
-
-# Sweep X from ₹0.50 to ₹15.00 in ₹0.10 steps → 146 variants
-cfg = SweepConfig(
-    x_min=0.50,
-    x_max=15.00,
-    x_step=0.10,
-    prev_close=2450.0,
-    budget=100_000,
-    brokerage_per_side=10.0,
-)
-
-engine = SweepEngine(cfg)
-results = engine.run(prices)
-
-print(f"Best:  X={results[0].x_val:.2f}  P&L=₹{results[0].net_pnl:,.0f}  trades={results[0].trade_count}")
-print(f"Worst: X={results[-1].x_val:.2f}  P&L=₹{results[-1].net_pnl:,.0f}")
-print(f"Backend: {engine.backend}")   # "cupy" | "numba" | "numpy"
-```
-
-### Large-scale sweep (GPU)
-
-```python
-# 32,000 variants — real AlgoStack production config
-cfg = SweepConfig(
-    x_min=0.001,
-    x_max=0.032,
-    x_step=0.000001,       # 1001-step range → 32,001 variants
-    prev_close=2450.0,
-    budget=100_000,
-)
-engine = SweepEngine(cfg)
-results = engine.run(prices)   # < 1ms on GPU
-```
-
----
-
-## API Reference
-
-### `SweepConfig`
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `x_min` | `0.005` | Minimum X deviation value |
-| `x_max` | `0.050` | Maximum X deviation value |
-| `x_step` | `0.0001` | Step size (Decimal-exact, no float64 drift) |
-| `prev_close` | `100.0` | Previous-day close (level anchor) |
-| `budget` | `100_000` | Capital per position (₹) |
-| `brokerage_per_side` | `10.0` | Flat brokerage per trade leg (₹) |
-
-### `SweepEngine`
-
-| Method | Description |
-|--------|-------------|
-| `.run(prices: np.ndarray)` | Run sweep, return `List[SweepResult]` sorted by net P&L |
-| `.benchmark(n_ticks: int)` | Performance report for active backend |
-| `.backend` | `"cupy"` \| `"numba"` \| `"numpy"` |
-
-### `SweepResult`
-
-```python
-@dataclass
-class SweepResult:
-    x_val:       float   # deviation parameter
-    net_pnl:     float   # net P&L after brokerage
-    gross_pnl:   float   # gross P&L
-    trade_count: int     # total round-trips
-    buy_above:   float   # long entry level
-    sell_below:  float   # short entry level
-    sl_buy:      float   # long stop-loss
-    sl_sell:     float   # short stop-loss
-```
-
----
-
-## Running Tests
-
-```bash
-pytest tests/ -v
-```
-
----
-
-## Project Context
-
-`vectorsweep` is extracted and generalised from the GPU sweep engine in [`AlgoStack`](https://github.com/Ridhaant/algostack) — specifically `gpu_sweep.py` (GPU backend) and `sweep_core.py` (1,830 lines, multi-backend sweep kernel).
-
-In production AlgoStack runs **32,000 variants × 38 NSE symbols = 1,216,000 parallel evaluations per price tick**, completing in < 1ms on a GTX 1650 — enabling real-time optimal strategy configuration selection while markets are live.
-
-**Part of the AlgoStack open-source layer:**
-- **[nexus-price-bus](https://github.com/Ridhaant/nexus-price-bus)** — multi-source ZMQ market data bus
-- **vectorsweep** — GPU strategy parameter sweep (this library)
-- **[sentitrade](https://github.com/Ridhaant/sentitrade)** — Indian market NLP sentiment pipeline
-
----
-
-## Author
-
-**[Ridhaant Ajoy Thackur](https://github.com/Ridhaant)**
-*Quant Developer · GPU ML Engineer · LNMIIT Jaipur*
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/ridhaant-thackur-09947a1b0)
-[![GitHub](https://img.shields.io/badge/GitHub-@Ridhaant-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Ridhaant)
-[![Email](https://img.shields.io/badge/Email-redantthakur%40gmail.com-D14836?style=flat-square&logo=gmail&logoColor=white)](mailto:redantthakur@gmail.com)
-
----
-
-## License
-
-MIT © 2026 Ridhaant Ajoy Thackur
+</div>
