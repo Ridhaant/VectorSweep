@@ -77,6 +77,17 @@ graph TD
 
 ---
 
+## 📂 Files to Upload
+
+When publishing this standalone repository, upload these exact files from the AlgoStack codebase:
+- `sweep_core.py` — The vectorised simulation core
+- `gpu_sweep.py` — CuPy/Numba auto-fallback abstraction layer
+- `x.py` — 147K variant aggregator and scoring engine
+- `requirements.txt` — (Must include `cupy-cuda12x`, `numba`, `numpy`)
+- This `README.md`
+
+---
+
 ## 🔗 Proven in Production
 
 Extracted from [AlgoStack](https://github.com/Ridhaant/AlgoStack) v10.7's `sweep_core.py` — battle-tested across **16 concurrent processes** on a live multi-asset trading platform processing NSE, MCX, and Binance markets simultaneously.
